@@ -5,6 +5,9 @@ import { firstValueFrom } from 'rxjs'
 
 import { serviceConfig } from '@/config/gateway.config'
 
+import { SignInDto } from '../dtos/sign-in.dto'
+import { SignUpDto } from '../dtos/sign-up.dto'
+
 interface UserSession {
     valid: boolean
     user: {
@@ -17,6 +20,17 @@ interface UserSession {
     } | null
 }
 
+export interface AuthResponse {
+    access_token: string
+    user: {
+        id: string
+        email: string
+        firstName: string
+        lastName: string
+        role: string
+    }
+}
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -24,7 +38,7 @@ export class AuthService {
         private readonly httpService: HttpService
     ) {}
 
-    validateJwtToken(token: string): Promise<any> {
+    validateJwtToken(token: string): Promise<AuthResponse> {
         try {
             return this.jwtService.verify(token)
         } catch (error) {
@@ -46,25 +60,29 @@ export class AuthService {
         }
     }
 
-    async signIn(signInDto: { email: string; password: string }) {
+    async signIn(signInDto: SignInDto): Promise<AuthResponse> {
         try {
             const { data } = await firstValueFrom(
                 this.httpService.post(`${serviceConfig.users.url}/sign-in`, signInDto, {
                     timeout: serviceConfig.users.timeout,
                 })
             )
+
+            return data
         } catch (error) {
             throw new UnauthorizedException('Invalid credentials token')
         }
     }
 
-    async signOut(signOutDto: any) {
+    async signUp(signUpDto: SignUpDto): Promise<AuthResponse> {
         try {
             const { data } = await firstValueFrom(
-                this.httpService.post(`${serviceConfig.users.url}/auth/sign-out`, signOutDto, {
+                this.httpService.post(`${serviceConfig.users.url}/auth/sign-out`, signUpDto, {
                     timeout: serviceConfig.users.timeout,
                 })
             )
+
+            return data
         } catch (error) {
             throw new UnauthorizedException('Registration failed')
         }
